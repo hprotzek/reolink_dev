@@ -31,6 +31,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_devices
                 devices.append(SpotLightSwitch(hass, config_entry))
             elif capability == "siren":
                 devices.append(SirenSwitch(hass, config_entry))
+                devices.append(AlarmSwitch(hass, config_entry))
             elif capability == "push":
                 devices.append(PushSwitch(hass, config_entry))
             elif capability == "recording":
@@ -460,4 +461,51 @@ class AudioSwitch(ReolinkEntity, ToggleEntity):
     async def async_turn_off(self, **kwargs):
         """Disable audio recording."""
         await self._base.api.set_audio(False)
+        await self.request_refresh()
+
+class AlarmSwitch(ReolinkEntity, ToggleEntity):
+    """An implementation of a Reolink IP camera audio switch."""
+
+    def __init__(self, hass, config):
+        """Initialize a Reolink camera."""
+        ReolinkEntity.__init__(self, hass, config)
+        ToggleEntity.__init__(self)
+        self._attr_entity_category = EntityCategory.CONFIG
+
+    @property
+    def unique_id(self):
+        """Return Unique ID string."""
+        return f"reolink_alarmSwitch_{self._base.unique_id}"
+
+    @property
+    def name(self):
+        """Return the name of this camera."""
+        return f"{self._base.name} audio alarm"
+
+    @property
+    def is_on(self):
+        """Camera audio switch Status."""
+        return self._base.api._audio_alarm_state
+
+    @property
+    def device_class(self):
+        """Device class of the switch."""
+        return DEVICE_CLASS_SWITCH
+
+    @property
+    def icon(self):
+        """Icon of the switch."""
+        if self.is_on:
+            return "mdi:volume-high"
+
+        return "mdi:volume-off"
+
+    async def async_turn_on(self, **kwargs):
+        """Enable audio recording."""
+        await self._base.api.set_audio_alarm(True)
+        await self.request_refresh()
+
+    async def async_turn_off(self, **kwargs):
+        """Disable audio recording."""
+        await self._base.api.set_audio_alarm(False)
         await self.request_refresh()
